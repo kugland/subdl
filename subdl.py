@@ -67,6 +67,7 @@ import io, gzip, base64
 import getopt
 import re
 import glob
+from configparser import ConfigParser
 
 OSDB_SERVER_URI = "https://api.opensubtitles.org/xml-rpc"
 xmlrpc_server = None
@@ -74,22 +75,22 @@ login = None
 osdb_token = None
 
 BLACKLIST = [
-    'opensubtitles',
-    'addic7ed',
-    'joycasino',
-    'bitninja\.io',
-    'Please rate this subtitle at www\.osdb\.link',
-    'allsubs',
-    'firebit\.org',
-    'humanguardians\.com',
-    'subtitles by',
-    'recast\.ai',
-    'by mstoll',
-    'subs corrected',
-    'by tronar',
-    'titlovi',
-    '^_$',
-    '^- _$',
+    r'opensubtitles',
+    r'addic7ed',
+    r'joycasino',
+    r'bitninja\.io',
+    r'Please rate this subtitle at www\.osdb\.link',
+    r'allsubs',
+    r'firebit\.org',
+    r'humanguardians\.com',
+    r'subtitles by',
+    r'recast\.ai',
+    r'by mstoll',
+    r'subs corrected',
+    r'by tronar',
+    r'titlovi',
+    r'^_$',
+    r'^- _$',
 ]
 
 class Options: pass
@@ -105,6 +106,18 @@ options.filter = False
 options.osdb_username = ''
 options.osdb_password = ''
 options.search = ''
+
+homedir = os.path.expanduser('~')
+
+configfile = os.path.join(homedir, '.subdlrc')
+configparser = ConfigParser()
+configparser.read(configfile)
+
+for opt in ['username', 'password', 'download', 'existing']:
+    try:
+        options.__setattr__(opt, configparser['subdl'][opt])
+    except:
+        pass
 
 class SubtitleSearchResult:
     def __init__(self, dict):
@@ -370,10 +383,10 @@ def osdb_connect():
 
 
 def glob_arguments(args):
-    arguments = []
-    for arg in args:
-        arguments += glob.glob(arg, recursive=True)
-    return arguments
+    if os.name != 'posix':
+        return [glob.glob(arg, recursive=True) for glob in args]
+    else:
+        return args
 
 def parseargs(args):
     try:
